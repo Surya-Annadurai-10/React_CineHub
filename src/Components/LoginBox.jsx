@@ -4,6 +4,11 @@ import { variantsObj } from '../Containers/Login'
 import { FaAnglesRight } from "react-icons/fa6";
 import { ToastContainer, toast } from "react-toastify";
 import {v4} from "uuid"
+import {Navigate, useNavigate} from "react-router-dom"
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleAuthProvider } from '../firebase';
+import {useDispatch} from "react-redux"
+import { addUserDetails } from '../slices/slice';
 
 const LoginBox = () => {
     const signUpCon = useRef(null);
@@ -17,7 +22,11 @@ const LoginBox = () => {
     const loginPassword = useRef(null);
     const emailFieldRef = useRef(null);
     const passwordFieldRef = useRef(null);
-
+    const navigate = useNavigate();
+    const [navigated , setNavigated] = useState(false);
+    const dispatch = useDispatch()
+  // console.log(navigate);
+  
 
     const [userDetails , setUserDetails] = useState({})
     const [showPasswordBox , setShowPasswordBox] = useState(false);
@@ -30,6 +39,19 @@ const LoginBox = () => {
    
     
  }
+
+
+ useEffect(() =>{
+    
+  if(navigated){
+    let timeOut = setTimeout(() =>{
+      navigate("/home")
+    },2500)
+
+
+    return ()=> clearTimeout(timeOut)
+  }
+ },[navigated])
 
  const handle2ndNext = (e) =>{
     e.preventDefault();
@@ -127,21 +149,21 @@ const LoginBox = () => {
     e.preventDefault();
     let userLoginData = {
         email : loginEmail.current.value || null,
-        password : loginPassword.current.value | null
+        password : loginPassword.current.value || null
     }
     let localUserData = JSON.parse(localStorage.getItem("userData"))
      
     if(localUserData){
        if((localUserData.email == userLoginData.email)){
         if(localUserData.password == userLoginData.password){
-            console.log("Registration successfull");
+            console.log("Login successfull");
             emailFieldRef.current.style.border ="1px solid white"
             emailFieldRef.current.style.boxShadow ="none"
              passwordFieldRef.current.style.border ="1px solid white"
             passwordFieldRef.current.style.boxShadow ="none"
             toast.success("Login successful !", {
                 position: "top-right",
-                autoClose: 5000, 
+                autoClose: 2000, 
                 hideProgressBar: false,
                 closeOnClick: true,
                 pauseOnHover: true,
@@ -149,8 +171,11 @@ const LoginBox = () => {
                 progress: undefined,
                 theme: "light",
               });
+           setNavigated(true);
+
         }else{
-            // console.log("enter correct email ");
+            console.log("localUserDataPassword " ,localUserData.password );
+            console.log("userLoginDataPassword " ,userLoginData.password );
             passwordFieldRef.current.style.border ="1px solid red"
             passwordFieldRef.current.style.boxShadow ="0px 0px 10px red"
             emailFieldRef.current.style.border ="1px solid white"
@@ -185,6 +210,40 @@ const LoginBox = () => {
        }
     }
 
+}
+
+const handleLoginWithGoogle = async(e) =>{
+e.preventDefault();
+  console.log("handleLoginWithGoogle");
+  
+ try {
+  const res = await signInWithPopup(auth , googleAuthProvider);
+  const userDetails =res.user.providerData[0];
+  localStorage.setItem("userData" , JSON.stringify(userDetails))
+  dispatch(addUserDetails(userDetails))
+  toast.success("Login successful !", {
+    position: "top-right",
+    autoClose: 2000, 
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+    theme: "light",
+  });
+  setNavigated(true);
+  // const userMailData = {
+  //   name : res.user.displayName,
+  //   email : res.user.email,
+  //   photoURL : res.user.photoURL,
+  //   uid : res.user.uid
+  // }
+
+ } catch (error) {
+  console.log("Error", error);
+  
+ }
+  
 }
 
  const handleNext =(e) =>{
@@ -235,12 +294,17 @@ const LoginBox = () => {
 
   return (
     <>
-    <div className={"lg:min-w-[450px] md:min-w-[80%] min-w-[92%] h-[75vh] overflow-hidden   absolute top-[15%] rounded-2xl bg-[#000000a9] shadow-[1px_1px_10px_black]" }> 
+    <motion.div 
+    variants={variantsObj}
+    initial ="hidden"
+    animate="show"
+    
+    className={"lg:min-w-[450px] md:min-w-[420px] min-w-[92%] h-[75vh] overflow-hidden   absolute top-[15%] rounded-2xl bg-[#000000a9] shadow-[1px_1px_10px_black]" }> 
        <div className='text-white w-[100%] h-[25%] flex justify-center items-center gap-2'>
         <h1 className={"lg:text-3xl text-2xl font-bold"}>Login to</h1>
-        <motion.h1 
-           variants={variantsObj}
-            className={"lg:text-3xl md:text-xl   font-bold text-2xl text-white"}>Cine<span className={"px-1 py-0.5 bg-[red] font-bold rounded text-black"}>hub</span></motion.h1>
+        <h1 
+          
+            className={"lg:text-3xl md:text-xl   font-bold text-2xl text-white"}>Cine<span className={"px-1 py-0.5 bg-[red] font-bold rounded text-black"}>hub</span></h1>
        </div>
        <form className={"text-white m-auto w-[80%] flex flex-col gap-5 "} action="">
        <fieldset ref={emailFieldRef}  className='border rounded-xl pl-2'>
@@ -252,7 +316,7 @@ const LoginBox = () => {
         <input ref={loginPassword} className='w-[100%]  h-full  rounded px-2  pb-5 pt-2 outline-0 text-amber-50' type="password" name="" id="password" placeholder='Password' />
        </fieldset>
         <button onClick={handleLoginBtn} className='w-[100%] mt-4 h-[50px] rounded-full font-bold lg:text-xl  bg-red-600'>Login</button>
-        <button className='w-[100%] h-[50px] rounded-full font-bold lg:text-xl flex items-center justify-center gap-5 px-[2rem] border-[grey]  border hover:bg-[red] hover:border-0'>
+        <button onClick={handleLoginWithGoogle} className='w-[100%] h-[50px] rounded-full font-bold lg:text-xl flex items-center justify-center gap-5 px-[2rem] border-[grey]  border hover:bg-[red] hover:border-0'>
             <img className={"lg:w-[30px] w-[25px] h-[25px] lg:h-[30px]"} src="https://www.pngkit.com/png/full/178-1783296_g-transparent-circle-google-logo.png" alt="" />
             <h3 >Continue with Google</h3>
             </button>
@@ -283,16 +347,16 @@ const LoginBox = () => {
        
        <form onSubmit={handle2ndNext}>
        <fieldset className='border  rounded-xl pl-2'>
-        <legend className='lg:-ml-38 -ml-28  p-1'>Password</legend>
+        <legend className='lg:-ml-38 md:-ml-35 -ml-28  p-1'>Password</legend>
         <input ref={signPassword}  className='w-[100%] h-full rounded-xl px-2  pb-5 pt-2 outline-0 ' type="password" name="" id="Sign-Password" placeholder='Password' />
        </fieldset>
     
        <fieldset className='border mt-2 rounded-xl pl-2'>
-        <legend className='lg:-ml-31 -ml-21   p-1'>Confirm Password</legend>
+        <legend className='lg:-ml-31 -ml-21  md:-ml-28  p-1'>Confirm Password</legend>
         <input ref={signConfirmPassword} className='w-[100%] h-full rounded-xl px-2  pb-5 pt-2 outline-0 text-amber-50' type="password" name="" id="Sign-Confirm" placeholder='Confirm Password' />
        </fieldset>
       
-        <button  ref={signSubmit}  className='lg:w-[30%] mt-4 h-[40px] w-[30%] lg:h-[50px] ml-[14.2rem] lg:ml-[18rem] rounded-full font-bold text-[13px] lg:text-xl  bg-red-600'><span className='flex items-center justify-center gap-2'>Submit </span></button>
+        <button  ref={signSubmit}  className='lg:w-[30%] mt-4 h-[40px] w-[30%] lg:h-[50px] ml-[14.2rem]  lg:ml-[18rem] rounded-full font-bold text-[13px] lg:text-xl  bg-red-600'><span className='flex items-center justify-center gap-2'>Submit </span></button>
         <ToastContainer />
        </form>
         </>
@@ -301,11 +365,11 @@ const LoginBox = () => {
         <>
        <form onSubmit={handleNext}>
        <fieldset className='border  rounded-xl pl-2'>
-        <legend className='lg:-ml-38 -ml-27  p-1'>User Name</legend>
+        <legend className='lg:-ml-38 md:-ml-35 p-1'>User Name</legend>
         <input ref={signUserName} className='w-[100%]   h-full rounded-xl px-2  pb-5 pt-2 outline-0 ' type="text" name="" id="Sign-userName" placeholder='User Name' />
        </fieldset>
        <fieldset className='border  mt-2 rounded-xl pl-2'>
-        <legend className='lg:-ml-43 -ml-33 p-1'>Email</legend>
+        <legend className='lg:-ml-43 md:-ml-40 p-1'>Email</legend>
         <input ref={signEmail} className='w-[100%] h-full bg-transparent rounded-xl px-2  pb-5 pt-2 outline-0 ' type="email" name="" id="Sign-email" placeholder='Email Address' />
        </fieldset>
      
@@ -314,7 +378,7 @@ const LoginBox = () => {
         </>
       }
        </div>
-        <button className='w-[100%] lg:mt-[2rem] h-[50px] rounded-full font-bold text-[13px] lg:text-xl flex items-center justify-center gap-5 px-[2rem] border-[grey]  border hover:bg-[red] hover:border-0'>
+        <button className='w-[100%] lg:mt-[2rem]  h-[50px] rounded-full font-bold text-[13px] lg:text-xl flex items-center justify-center gap-5 px-[2rem] border-[grey]  border hover:bg-[red] hover:border-0'>
             <img className={"w-[25px] h-[25px] lg:w-[30px] lg:h-[30px]"} src="https://www.pngkit.com/png/full/178-1783296_g-transparent-circle-google-logo.png" alt="" />
             <h3>Continue with Google</h3>
             </button>
@@ -323,7 +387,7 @@ const LoginBox = () => {
         </div>
         
         </div>
-    </div>
+    </motion.div>
     </>
   )
 }

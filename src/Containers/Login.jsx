@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import logo from "../assets/cinehub.png"
 import bgimg from "../assets/bgimage.jpg"
 import {easeInOut, motion} from "motion/react"
 import LoginBox from '../Components/LoginBox'
+import { useNavigate } from 'react-router-dom'
 
 export const variantsObj = {
     hidden :{
@@ -18,8 +19,8 @@ export const variantsObj = {
         } 
     },
     hover:{
-      scale: 1.05,
-      boxShadow: "0px 0px 10px orange",
+      scale: 1.01,
+      boxShadow: "0px 0px 5px orange",
       transition:{
             duration:0.5,
             ease : easeInOut
@@ -33,8 +34,24 @@ export const variantsObj = {
 }
 
 const Login = () => {
-    const [showExplore , setShowExplore] = useState(true);
+    const [showExplore , setShowExplore] = useState(false);
 
+
+    const navigate = useNavigate();
+
+    useEffect(() =>{
+        
+      let localData = localStorage.getItem("userData")
+       
+      if(localData){
+        localData = JSON.parse(localData);
+        console.log(localData);
+        navigate("/home")
+      }else{
+          console.log(localData);
+          navigate("/")
+      }
+    },[]);
  
   return (
    <>
@@ -77,6 +94,7 @@ const Login = () => {
                 animate="show"
                 whileHover="hover"
                 whileTap="tap"
+                onClick={() =>setShowExplore(true)}
                 className={"w-full rounded shadow[1px_1px_10px_rgb(255,0,0,0.5)] shadow-red-500 text-2xl font-bold h-[50px] hover:text-white bg-[red] text-black"}>Explore</motion.button>
                 <motion.p
                 initial={{
